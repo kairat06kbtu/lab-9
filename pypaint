@@ -1,33 +1,39 @@
+# Импорт необходимых библиотек
 import pygame
 import math
 
+# Главная функция программы
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode((640, 480))
-    pygame.display.set_caption("Paint App")
-    clock = pygame.time.Clock()
+    pygame.init()  # Инициализация Pygame
+    screen = pygame.display.set_mode((640, 480))  # Создание окна
+    pygame.display.set_caption("Paint App")  # Заголовок окна
+    clock = pygame.time.Clock()  # Объект для управления FPS
 
-    canvas = pygame.Surface(screen.get_size())
-    canvas.fill((0, 0, 0))
+    canvas = pygame.Surface(screen.get_size())  # Поверхность для рисования
+    canvas.fill((0, 0, 0))  # Заполнение фона черным цветом
 
-    radius = 15
-    mode = 'blue'
-    drawing = False
-    tool = 'brush'
-    start_pos = None
+    radius = 15  # Радиус кисти
+    mode = 'blue'  # Цвет по умолчанию
+    drawing = False  # Флаг рисования
+    tool = 'brush'  # Инструмент по умолчанию — кисть
+    start_pos = None  # Начальная позиция (используется для фигур)
 
+    # Главный цикл
     while True:
         pressed = pygame.key.get_pressed()
         alt_held = pressed[pygame.K_LALT] or pressed[pygame.K_RALT]
         ctrl_held = pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]
 
+        # Обработка событий
         for event in pygame.event.get():
+            # Выход из программы
             if event.type == pygame.QUIT or \
                (event.type == pygame.KEYDOWN and ((event.key == pygame.K_w and ctrl_held) or 
                                                   (event.key == pygame.K_F4 and alt_held) or 
                                                   event.key == pygame.K_ESCAPE)):
                 return
 
+            # Изменение цвета или инструмента по нажатию клавиш
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     mode = 'red'
@@ -52,39 +58,52 @@ def main():
                 elif event.key == pygame.K_h:
                     tool = 'rhombus'
 
+            # Начало рисования
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     drawing = True
                     start_pos = event.pos
+                    # Для кисти и ластика рисуем сразу
                     if tool in ['brush', 'eraser']:
                         color = (0, 0, 0) if tool == 'eraser' else get_color(mode)
                         pygame.draw.circle(canvas, color, event.pos, radius)
+                # Увеличение/уменьшение радиуса колесиком мыши
                 elif event.button == 4:
                     radius = min(200, radius + 1)
                 elif event.button == 5:
                     radius = max(1, radius - 1)
 
+            # Завершение рисования
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     drawing = False
                     end_pos = event.pos
                     color = get_color(mode)
 
+                    # Прямоугольник
                     if tool == 'rectangle':
                         rect = pygame.Rect(start_pos, (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1]))
                         pygame.draw.rect(canvas, color, rect, 2)
+
+                    # Эллипс
                     elif tool == 'circle':
                         rect = pygame.Rect(start_pos, (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1]))
                         pygame.draw.ellipse(canvas, color, rect, 2)
+
+                    # Квадрат
                     elif tool == 'square':
                         side = min(abs(end_pos[0] - start_pos[0]), abs(end_pos[1] - start_pos[1]))
                         rect = pygame.Rect(start_pos, (side, side))
                         pygame.draw.rect(canvas, color, rect, 2)
+
+                    # Прямоугольный треугольник
                     elif tool == 'right_triangle':
                         x1, y1 = start_pos
                         x2, y2 = end_pos
                         points = [(x1, y1), (x1, y2), (x2, y2)]
                         pygame.draw.polygon(canvas, color, points, 2)
+
+                    # Равносторонний треугольник
                     elif tool == 'equilateral_triangle':
                         x1, y1 = start_pos
                         x2, y2 = end_pos
@@ -96,6 +115,8 @@ def main():
                             (x1 + side / 2, y1 - height)
                         ]
                         pygame.draw.polygon(canvas, color, points, 2)
+
+                    # Ромб
                     elif tool == 'rhombus':
                         x1, y1 = start_pos
                         x2, y2 = end_pos
@@ -111,21 +132,25 @@ def main():
                         ]
                         pygame.draw.polygon(canvas, color, points, 2)
 
+            # Рисование кистью или ластиком при движении мыши
             if event.type == pygame.MOUSEMOTION:
                 if drawing and tool in ['brush', 'eraser']:
                     color = (0, 0, 0) if tool == 'eraser' else get_color(mode)
                     pygame.draw.circle(canvas, color, event.pos, radius)
 
+        # Отображение холста на экране
         screen.blit(canvas, (0, 0))
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(60)  # Поддержание 60 FPS
 
+# Функция возвращает цвет по выбранному режиму
 def get_color(color_mode):
     colors = {
         'blue': (0, 0, 255),
         'red': (255, 0, 0),
         'green': (0, 255, 0)
     }
-    return colors.get(color_mode, (255, 255, 255))
+    return colors.get(color_mode, (255, 255, 255))  # Белый по умолчанию
 
+# Запуск программы
 main()
