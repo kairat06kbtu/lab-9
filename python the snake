@@ -1,63 +1,80 @@
 import pygame, random, sys
 
+# Инициализация Pygame
 pygame.init()
 
+# Цвета
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 
+# Размеры экрана и сетки
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 500
 GRID_SIZE = 20
 
+# Создание окна
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Змейка")
 
+# Класс змейки
 class Snake:
     def __init__(self):
+        # Тело змейки из трех сегментов
         self.body = [(100, 100), (80, 100), (60, 100)]
-        self.direction = "RIGHT"
-        self.growing = False
+        self.direction = "RIGHT"  # Начальное направление
+        self.growing = False  # Флаг роста змейки
 
     def move(self):
+        # Получаем координаты головы
         head_x, head_y = self.body[0]
+        # Определяем новое положение головы в зависимости от направления
         if self.direction == "UP":
             new_head = (head_x, head_y - GRID_SIZE)
         elif self.direction == "DOWN":
             new_head = (head_x, head_y + GRID_SIZE)
         elif self.direction == "LEFT":
             new_head = (head_x - GRID_SIZE, head_y)
-        else:
+        else:  # RIGHT
             new_head = (head_x + GRID_SIZE, head_y)
+        # Добавляем новую голову в начало тела
         self.body.insert(0, new_head)
+        # Удаляем хвост, если не происходит рост
         if not self.growing:
             self.body.pop()
         else:
             self.growing = False
 
     def grow(self):
+        # Устанавливаем флаг, чтобы не удалять хвост
         self.growing = True
 
     def check_collision(self):
+        # Проверка на столкновение с границами экрана
         head_x, head_y = self.body[0]
         if head_x < 0 or head_x >= SCREEN_WIDTH or head_y < 0 or head_y >= SCREEN_HEIGHT:
             return True
+        # Проверка на столкновение с самой собой
         if (head_x, head_y) in self.body[1:]:
             return True
         return False
 
     def draw(self, screen):
+        # Отрисовка каждого сегмента тела змейки
         for segment in self.body:
             pygame.draw.rect(screen, GREEN, (*segment, GRID_SIZE, GRID_SIZE))
 
+# Класс еды
 class Food:
     def __init__(self, snake_body):
-        self.spawn_time = pygame.time.get_ticks()
-        self.position = self.random_position(snake_body)
-        self.weight = random.choice([1, 2, 3])
+        self.spawn_time = pygame.time.get_ticks()  # Время появления еды
+        self.position = self.random_position(snake_body)  # Случайная позиция
+        self.weight = random.choice([1, 2, 3])  # Вес (очки и рост)
+        # Цвет зависит от веса: 1 — красный, 2 — оранжевый, 3 — желтый
         self.color = [(255, 0, 0), (255, 165, 0), (255, 255, 0)][self.weight - 1]
 
     def random_position(self, snake_body):
+        # Генерация позиции, которая не совпадает с телом змейки
         while True:
             x = random.randint(0, (SCREEN_WIDTH // GRID_SIZE) - 1) * GRID_SIZE
             y = random.randint(0, (SCREEN_HEIGHT // GRID_SIZE) - 1) * GRID_SIZE
@@ -65,23 +82,27 @@ class Food:
                 return (x, y)
 
     def draw(self, screen):
+        # Отрисовка еды
         pygame.draw.rect(screen, self.color, (*self.position, GRID_SIZE, GRID_SIZE))
 
+# Создание объектов
 snake = Snake()
 food = Food(snake.body)
-speed = 10
+speed = 10  # Начальная скорость
 score = 0
 level = 1
-food_lifetime = 5000
+food_lifetime = 5000  # Время жизни еды в миллисекундах (5 секунд)
 
 clock = pygame.time.Clock()
 running = True
 
+# Главный игровой цикл
 while running:
-    screen.fill(WHITE)
+    screen.fill(WHITE)  # Очистка экрана
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        # Управление с клавиатуры
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP and snake.direction != "DOWN":
                 snake.direction = "UP"
@@ -92,35 +113,41 @@ while running:
             elif event.key == pygame.K_RIGHT and snake.direction != "LEFT":
                 snake.direction = "RIGHT"
 
-    snake.move()
+    snake.move()  # Движение змейки
 
-    if snake.check_collision():
+    if snake.check_collision():  # Проверка на проигрыш
         running = False
 
+    # Проверка столкновения с едой
     if snake.body[0] == food.position:
-        for _ in range(food.weight):
+        for _ in range(food.weight):  # Рост в зависимости от веса еды
             snake.grow()
-        score += food.weight
-        food = Food(snake.body)
+        score += food.weight  # Увеличение счета
+        food = Food(snake.body)  # Генерация новой еды
 
+    # Проверка времени жизни еды
     if pygame.time.get_ticks() - food.spawn_time > food_lifetime:
-        food = Food(snake.body)
+        food = Food(snake.body)  # Новая еда
 
+    # Уровень и увеличение скорости каждые 3 очка
     if score % 3 == 0 and score != 0:
         level = score // 3 + 1
         speed = 10 + (level - 1) * 2
 
+    # Отрисовка объектов
     snake.draw(screen)
     food.draw(screen)
 
+    # Отображение счета и уровня
     font = pygame.font.SysFont("Verdana", 20)
     score_text = font.render(f"Очки: {score}", True, BLACK)
     level_text = font.render(f"Уровень: {level}", True, BLACK)
     screen.blit(score_text, (10, 10))
     screen.blit(level_text, (10, 40))
 
-    pygame.display.flip()
-    clock.tick(speed)
+    pygame.display.flip()  # Обновление экрана
+    clock.tick(speed)  # Контроль FPS
 
+# Завершение Pygame
 pygame.quit()
 sys.exit()
